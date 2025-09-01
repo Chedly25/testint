@@ -71,10 +71,19 @@ export function CVAnalysis() {
       }
 
       console.log('Extracting text from file:', file.name);
+      console.log('File details:', {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        sizeInMB: (file.size / (1024 * 1024)).toFixed(2) + ' MB'
+      });
+      
       // Extract text from file and analyze with real API
       const content = await extractTextFromFile(file);
+      console.log('Text extraction successful!');
       console.log('Extracted text length:', content.length);
-      console.log('Text preview:', content.substring(0, 200));
+      console.log('Text preview (first 200 chars):', content.substring(0, 200));
+      console.log('Text preview (last 200 chars):', content.substring(-200));
       
       if (!content || content.trim().length < 50) {
         throw new Error('Could not extract meaningful content from the file');
@@ -108,10 +117,29 @@ export function CVAnalysis() {
       console.error('Error analyzing CV:', error);
       setUploadStatus('error');
       
-      // Show error message instead of fallback
-      alert(`Error analyzing CV: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // Show detailed error message with suggestions
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Full error details:', error);
       
-      // Don't show results on error
+      // Create a more helpful error dialog with debugging info
+      const helpfulMessage = `CV Analysis Error: ${errorMessage}
+
+File Details:
+- Name: ${file.name}
+- Type: ${file.type}
+- Size: ${(file.size / (1024 * 1024)).toFixed(2)} MB
+
+Troubleshooting Steps:
+1. Try a different PDF file (preferably smaller than 5MB)
+2. Ensure the PDF contains selectable text (not scanned images)
+3. Try converting the PDF to DOCX format
+4. Copy the CV content to a .txt file and upload that instead
+5. Check the browser console for detailed error logs
+6. Refresh the page and try again
+
+Technical Note: Check the browser console (F12) for detailed error information.`;
+
+      alert(helpfulMessage);
       setShowResults(false);
     } finally {
       setIsAnalyzing(false);
