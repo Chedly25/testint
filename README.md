@@ -1,36 +1,118 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Interview Helper Pro
+
+AI-powered recruitment platform for comprehensive interview management with real-time analytics, CV analysis, and behavioral insights.
+
+## Features
+
+- **CV Analysis**: Upload and analyze candidate CVs with AI-powered insights
+- **Live Interview Recording**: Real-time transcription and AI question suggestions  
+- **Behavioral Analysis**: Sentiment tracking and personality assessment
+- **Candidate Comparison**: Side-by-side comparison with radar charts
+- **Analytics Dashboard**: Performance metrics and hiring insights
+- **Interview Library**: Searchable archive with filtering capabilities
+- **AI Question Bank**: Dynamic question generation for different roles
+- **Final Reports**: Comprehensive reporting with downloadable summaries
+
+## Tech Stack
+
+- **Frontend**: React 19, Next.js 15, TypeScript
+- **Styling**: CSS with custom design system
+- **Charts**: Chart.js with react-chartjs-2
+- **Testing**: Jest with React Testing Library
 
 ## Getting Started
 
-First, run the development server:
+1. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+2. **Run development server**
+   ```bash
+   npm run dev
+   ```
+
+3. **Open [http://localhost:3000](http://localhost:3000) in your browser**
+
+4. **Run tests**
+   ```bash
+   npm test
+   ```
+
+## Heroku Deployment
+
+### Method 1: Heroku CLI
+
+1. **Install Heroku CLI** and login:
+   ```bash
+   heroku login
+   ```
+
+2. **Create a new Heroku app**:
+   ```bash
+   heroku create your-app-name
+   ```
+
+3. **Deploy to Heroku**:
+   ```bash
+   git add .
+   git commit -m "Deploy to Heroku"
+   git push heroku main
+   ```
+
+### Method 2: Heroku Dashboard
+
+1. Go to [Heroku Dashboard](https://dashboard.heroku.com/)
+2. Click "New" → "Create new app"  
+3. Connect your GitHub repository
+4. Click "Deploy Branch"
+
+### Method 3: One-click Deploy
+
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+
+## Environment Variables (Optional)
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# For real AI analysis (optional)
+ANTHROPIC_API_KEY=your_api_key_here
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Production Build
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build
+npm start
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## File Structure
 
-## Learn More
+```
+interview-helper-pro/
+├── app/                  # Next.js app directory
+├── components/          # React components  
+├── lib/                 # Utilities and data
+├── __tests__/           # Test files
+├── Procfile            # Heroku configuration
+├── app.json            # Heroku app settings
+└── package.json        # Dependencies
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Testing
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The application includes comprehensive test coverage:
+- 119 total tests across 9 components
+- Unit tests for all major components
+- Integration tests for complete workflows
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm test              # Run all tests
+npm run test:watch    # Watch mode
+npm run test:coverage # Coverage report
+```
 
-## Deploy on Vercel
+## Troubleshooting Heroku Deployment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Build Issues**: Check Node.js version is >=18.0.0
+- **Runtime Issues**: Check logs with `heroku logs --tail`
+- **Environment**: Heroku automatically sets `PORT` environment variable
