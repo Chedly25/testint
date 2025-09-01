@@ -1,7 +1,7 @@
 {
   "name": "Interview Helper Pro",
   "description": "AI-powered recruitment platform for comprehensive interview management",
-  "repository": "https://github.com/yourusername/interview-helper-pro",
+  "repository": "https://github.com/Chedly25/testint",
   "logo": "https://node-js-sample.herokuapp.com/node.png",
   "keywords": ["node", "express", "react", "nextjs", "interview", "recruitment", "ai"],
   "image": "heroku/nodejs",
