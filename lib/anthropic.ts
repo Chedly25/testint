@@ -1,12 +1,23 @@
 import Anthropic from '@anthropic-ai/sdk';
 
-const anthropic = new Anthropic({
-  apiKey: process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY || '',
-  dangerouslyAllowBrowser: true
-});
+function getAnthropicClient() {
+  const apiKey = typeof window !== 'undefined' 
+    ? localStorage.getItem('anthropic_api_key') 
+    : process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY;
+    
+  if (!apiKey) {
+    throw new Error('No Anthropic API key found. Please set your API key in Settings.');
+  }
+  
+  return new Anthropic({
+    apiKey,
+    dangerouslyAllowBrowser: true
+  });
+}
 
 export async function analyzeCV(cvContent: string) {
   try {
+    const anthropic = getAnthropicClient();
     const response = await anthropic.messages.create({
       model: 'claude-3-sonnet-20240229',
       max_tokens: 2000,
@@ -39,6 +50,7 @@ export async function analyzeInterview(
   cvContent?: string
 ) {
   try {
+    const anthropic = getAnthropicClient();
     const response = await anthropic.messages.create({
       model: 'claude-3-sonnet-20240229',
       max_tokens: 2000,
@@ -75,6 +87,7 @@ export async function generateFollowUpQuestion(
   cvContent?: string
 ): Promise<string> {
   try {
+    const anthropic = getAnthropicClient();
     const response = await anthropic.messages.create({
       model: 'claude-3-haiku-20240307',
       max_tokens: 200,

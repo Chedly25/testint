@@ -71,12 +71,17 @@ AI-powered recruitment platform for comprehensive interview management with real
 
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
 
-## Environment Variables (Optional)
+## API Configuration
 
-```bash
-# For real AI analysis (optional)
-ANTHROPIC_API_KEY=your_api_key_here
-```
+### For Real AI Analysis (Optional)
+
+The app works out of the box with mock data, but for real AI-powered CV analysis, you can configure your Anthropic API key:
+
+1. **Get API Key**: Visit [Anthropic Console](https://console.anthropic.com/) and create an API key
+2. **Configure in App**: Go to Settings → API Settings and enter your key
+3. **Upload CVs**: Now get real AI analysis instead of mock data!
+
+**Note**: API keys are stored securely in your browser's localStorage and never sent to our servers.
 
 ## Production Build
 

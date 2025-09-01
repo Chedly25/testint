@@ -12,6 +12,7 @@ import { Comparison } from '@/components/Comparison';
 import { InterviewLibrary } from '@/components/InterviewLibrary';
 import { BehavioralAnalysis } from '@/components/BehavioralAnalysis';
 import { QuestionBank } from '@/components/QuestionBank';
+import { Settings } from '@/components/Settings';
 
 export default function Home() {
   const [currentSection, setCurrentSection] = useState<Section>('dashboard');
@@ -75,6 +76,10 @@ export default function Home() {
         
         <div className={`content-section ${currentSection === 'question-bank' ? 'active' : ''}`} id="question-bank">
           <QuestionBank />
+        </div>
+        
+        <div className={`content-section ${currentSection === 'settings' ? 'active' : ''}`} id="settings">
+          <Settings />
         </div>
       </main>
     </div>

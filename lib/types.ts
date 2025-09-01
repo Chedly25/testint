@@ -45,4 +45,5 @@ export type Section =
   | 'comparison' 
   | 'interview-library' 
   | 'behavioral-analysis' 
-  | 'question-bank';
+  | 'question-bank'
+  | 'settings';

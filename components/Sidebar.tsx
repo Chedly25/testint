@@ -17,6 +17,7 @@ const navItems = [
   { id: 'interview-library', label: 'Interview Library', icon: '📚' },
   { id: 'behavioral-analysis', label: 'Behavioral Analysis', icon: '🧠' },
   { id: 'question-bank', label: 'Question Bank', icon: '❓' },
+  { id: 'settings', label: 'Settings', icon: '⚙️' },
 ] as const;
 
 export function Sidebar({ currentSection, onSectionChange }: SidebarProps) {

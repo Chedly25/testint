@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { appData } from '@/lib/data';
 import { extractTextFromFile } from '@/lib/pdf-parser';
 import { analyzeCV } from '@/lib/anthropic';
@@ -10,7 +10,20 @@ export function CVAnalysis() {
   const [showResults, setShowResults] = useState(false);
   const [analysisResults, setAnalysisResults] = useState(appData.sampleCandidates[0]);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
+  const [hasApiKey, setHasApiKey] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const checkApiKey = () => {
+      const apiKey = localStorage.getItem('anthropic_api_key');
+      setHasApiKey(!!apiKey);
+    };
+
+    checkApiKey();
+    // Check for API key changes
+    window.addEventListener('storage', checkApiKey);
+    return () => window.removeEventListener('storage', checkApiKey);
+  }, []);
 
   const handleBrowseClick = () => {
     fileInputRef.current?.click();
@@ -40,22 +53,47 @@ export function CVAnalysis() {
     setUploadStatus('uploading');
     
     try {
-      // Simulate file processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Check if API key is available
+      const apiKey = localStorage.getItem('anthropic_api_key');
       
-      // Use sample data for demonstration
-      setAnalysisResults(appData.sampleCandidates[0]);
+      if (!apiKey) {
+        // Show mock data if no API key
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        setAnalysisResults({
+          ...appData.sampleCandidates[0],
+          name: file.name.replace(/\.(pdf|docx)$/i, ''),
+        });
+        setShowResults(true);
+        setUploadStatus('success');
+        return;
+      }
+
+      // Extract text from file and analyze with real API
+      const content = await extractTextFromFile(file);
+      const analysis = await analyzeCV(content);
+      
+      // Map API response to our data structure
+      setAnalysisResults({
+        ...appData.sampleCandidates[0],
+        name: file.name.replace(/\.(pdf|docx)$/i, ''),
+        cvScore: Math.round(analysis.fitScore / 10), // Convert 0-100 to 0-10
+        strengths: analysis.strengths || appData.sampleCandidates[0].strengths,
+        weaknesses: analysis.weaknesses || appData.sampleCandidates[0].weaknesses,
+      });
+      
       setShowResults(true);
       setUploadStatus('success');
-      
-      // If you have a valid API key, you can enable this:
-      // const content = await extractTextFromFile(file);
-      // const analysis = await analyzeCV(content);
-      // setAnalysisResults({...appData.sampleCandidates[0], ...analysis});
       
     } catch (error) {
       console.error('Error analyzing CV:', error);
       setUploadStatus('error');
+      
+      // Fallback to mock data on error
+      setAnalysisResults({
+        ...appData.sampleCandidates[0],
+        name: file.name.replace(/\.(pdf|docx)$/i, ''),
+      });
+      setShowResults(true);
     } finally {
       setIsAnalyzing(false);
     }
@@ -115,6 +153,11 @@ export function CVAnalysis() {
       <div className="section-header">
         <h1>CV Analysis</h1>
         <p>Upload and analyze candidate CVs with AI-powered insights</p>
+        {!hasApiKey && (
+          <div className="api-warning">
+            <span>⚠️ Using mock data. <a href="#settings" onClick={() => window.location.hash = 'settings'}>Set up your Anthropic API key</a> for real AI analysis.</span>
+          </div>
+        )}
       </div>
 
       <div className="cv-analysis-container">
