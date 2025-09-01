@@ -1668,6 +1668,49 @@ select.form-control {
   color: var(--color-primary-dark);
 }
 
+/* Dashboard Styles */
+.dashboard-centered {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.welcome-card {
+  margin-bottom: var(--space-24);
+}
+
+.feature-highlights {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  margin-top: var(--space-20);
+}
+
+.feature-highlights .feature-item {
+  display: flex;
+  gap: var(--space-16);
+  align-items: flex-start;
+  padding: var(--space-16);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-1);
+}
+
+.feature-highlights .feature-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.feature-highlights strong {
+  display: block;
+  margin-bottom: var(--space-4);
+  color: var(--color-text);
+}
+
+.feature-highlights p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
 @media (max-width: 768px) {
   .api-input-group {
     flex-direction: column;
@@ -1681,5 +1724,79 @@ select.form-control {
   .step-item,
   .feature-item {
     gap: var(--space-12);
+  }
+  
+  .dashboard-centered {
+    max-width: 100%;
+  }
+  
+  .feature-highlights .feature-item {
+    gap: var(--space-12);
+    padding: var(--space-12);
+  }
+}
+
+/* Placeholder Styles */
+.analytics-placeholder,
+.library-placeholder {
+  max-width: 600px;
+  margin: 0 auto;
+  padding-top: var(--space-32);
+}
+
+.placeholder-content {
+  text-align: center;
+  padding: var(--space-32);
+}
+
+.placeholder-icon {
+  font-size: 64px;
+  margin-bottom: var(--space-16);
+}
+
+.placeholder-content h3 {
+  margin: 0 0 var(--space-16) 0;
+  color: var(--color-text);
+}
+
+.placeholder-content p {
+  margin: 0 0 var(--space-24) 0;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.placeholder-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-16);
+  margin-top: var(--space-24);
+}
+
+.placeholder-feature {
+  display: flex;
+  align-items: center;
+  gap: var(--space-12);
+  padding: var(--space-12);
+  background: var(--color-bg-1);
+  border-radius: var(--radius-md);
+  text-align: left;
+}
+
+.placeholder-feature span {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .placeholder-features {
+    grid-template-columns: 1fr;
+  }
+  
+  .placeholder-content {
+    padding: var(--space-24);
+  }
+  
+  .placeholder-icon {
+    font-size: 48px;
   }
 }

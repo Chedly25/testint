@@ -7,70 +7,42 @@ interface DashboardProps {
 }
 
 export function Dashboard({ onQuickAction }: DashboardProps) {
-  const recentInterviews = appData.sampleCandidates.slice(0, 3);
-
   return (
     <>
       <div className="section-header">
-        <h1>Dashboard Overview</h1>
-        <p>Your interview management hub</p>
+        <h1>Interview Helper Pro</h1>
+        <p>AI-powered recruitment platform for comprehensive interview management</p>
       </div>
       
-      <div className="dashboard-grid">
-        <div className="card stats-card">
-          <div className="card__body">
-            <h3>Total Interviews</h3>
-            <div className="stat-number">156</div>
-            <div className="stat-change positive">+12% this month</div>
-          </div>
-        </div>
-        
-        <div className="card stats-card">
-          <div className="card__body">
-            <h3>Completion Rate</h3>
-            <div className="stat-number">87%</div>
-            <div className="stat-change positive">+5% vs last month</div>
-          </div>
-        </div>
-        
-        <div className="card stats-card">
-          <div className="card__body">
-            <h3>Avg Duration</h3>
-            <div className="stat-number">42min</div>
-            <div className="stat-change neutral">Same as last month</div>
-          </div>
-        </div>
-        
-        <div className="card stats-card">
-          <div className="card__body">
-            <h3>Active Candidates</h3>
-            <div className="stat-number">23</div>
-            <div className="stat-change positive">+8 new this week</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="dashboard-content">
-        <div className="card recent-interviews">
+      <div className="dashboard-content dashboard-centered">
+        <div className="card welcome-card">
           <div className="card__header">
-            <h3>Recent Interviews</h3>
-            <button className="btn btn--sm btn--outline">View All</button>
+            <h3>Welcome to Interview Helper Pro</h3>
           </div>
           <div className="card__body">
-            <div className="interview-list">
-              {recentInterviews.map((candidate) => (
-                <div key={candidate.id} className="interview-item">
-                  <div className="interview-info">
-                    <h4>{candidate.name}</h4>
-                    <p>{candidate.position} • {candidate.date}</p>
-                  </div>
-                  <div className="interview-status">
-                    <span className={`status ${candidate.status === 'completed' ? 'status--success' : 'status--warning'}`}>
-                      {candidate.status}
-                    </span>
-                  </div>
+            <p>Get started with AI-powered interview management. Upload CVs, conduct interviews, and generate comprehensive reports.</p>
+            <div className="feature-highlights">
+              <div className="feature-item">
+                <span className="feature-icon">📄</span>
+                <div>
+                  <strong>CV Analysis</strong>
+                  <p>Upload and analyze candidate CVs with AI insights</p>
                 </div>
-              ))}
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon">🎥</span>
+                <div>
+                  <strong>Live Interview</strong>
+                  <p>Record interviews with real-time transcription</p>
+                </div>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon">📊</span>
+                <div>
+                  <strong>Analytics</strong>
+                  <p>Track performance and hiring insights</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -55,9 +55,11 @@ export function CVAnalysis() {
     try {
       // Check if API key is available
       const apiKey = localStorage.getItem('anthropic_api_key');
+      console.log('API Key available:', !!apiKey);
       
       if (!apiKey) {
         // Show mock data if no API key
+        console.log('No API key found, using mock data');
         await new Promise(resolve => setTimeout(resolve, 2000));
         setAnalysisResults({
           ...appData.sampleCandidates[0],
@@ -68,32 +70,49 @@ export function CVAnalysis() {
         return;
       }
 
+      console.log('Extracting text from file:', file.name);
       // Extract text from file and analyze with real API
       const content = await extractTextFromFile(file);
+      console.log('Extracted text length:', content.length);
+      console.log('Text preview:', content.substring(0, 200));
+      
+      if (!content || content.trim().length < 50) {
+        throw new Error('Could not extract meaningful content from the file');
+      }
+
+      console.log('Calling Anthropic API...');
       const analysis = await analyzeCV(content);
+      console.log('API Response:', analysis);
       
       // Map API response to our data structure
       setAnalysisResults({
-        ...appData.sampleCandidates[0],
+        id: appData.sampleCandidates[0].id,
         name: file.name.replace(/\.(pdf|docx)$/i, ''),
-        cvScore: Math.round(analysis.fitScore / 10), // Convert 0-100 to 0-10
-        strengths: analysis.strengths || appData.sampleCandidates[0].strengths,
-        weaknesses: analysis.weaknesses || appData.sampleCandidates[0].weaknesses,
+        position: 'Candidate', // Default position
+        cvScore: Math.round((analysis.fitScore || 75) / 10), // Convert 0-100 to 0-10
+        interviewScore: appData.sampleCandidates[0].interviewScore,
+        status: 'completed' as const,
+        date: new Date().toISOString().split('T')[0],
+        skills: appData.sampleCandidates[0].skills,
+        strengths: analysis.strengths || ['Unable to extract strengths'],
+        weaknesses: analysis.weaknesses || ['Unable to identify areas for improvement'],
+        interviewDuration: appData.sampleCandidates[0].interviewDuration,
+        sentimentScore: appData.sampleCandidates[0].sentimentScore,
       });
       
       setShowResults(true);
       setUploadStatus('success');
+      console.log('Analysis complete');
       
     } catch (error) {
       console.error('Error analyzing CV:', error);
       setUploadStatus('error');
       
-      // Fallback to mock data on error
-      setAnalysisResults({
-        ...appData.sampleCandidates[0],
-        name: file.name.replace(/\.(pdf|docx)$/i, ''),
-      });
-      setShowResults(true);
+      // Show error message instead of fallback
+      alert(`Error analyzing CV: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      
+      // Don't show results on error
+      setShowResults(false);
     } finally {
       setIsAnalyzing(false);
     }
