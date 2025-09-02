@@ -4,44 +4,48 @@ import { useState, useEffect, useRef } from 'react';
 import { generateFollowUpQuestion } from '@/lib/anthropic';
 
 // Type definitions for Web Speech API
-interface SpeechRecognitionEvent {
+interface ISpeechRecognitionEvent {
   resultIndex: number;
-  results: SpeechRecognitionResultList;
+  results: ISpeechRecognitionResultList;
 }
 
-interface SpeechRecognitionResultList {
+interface ISpeechRecognitionResultList {
   length: number;
-  [index: number]: SpeechRecognitionResult;
+  [index: number]: ISpeechRecognitionResult;
 }
 
-interface SpeechRecognitionResult {
+interface ISpeechRecognitionResult {
   length: number;
   isFinal: boolean;
-  [index: number]: SpeechRecognitionAlternative;
+  [index: number]: ISpeechRecognitionAlternative;
 }
 
-interface SpeechRecognitionAlternative {
+interface ISpeechRecognitionAlternative {
   transcript: string;
   confidence: number;
 }
 
-interface SpeechRecognition extends EventTarget {
+interface ISpeechRecognition extends EventTarget {
   continuous: boolean;
   interimResults: boolean;
   lang: string;
   start(): void;
   stop(): void;
   abort(): void;
-  onstart: ((this: SpeechRecognition, ev: Event) => any) | null;
-  onend: ((this: SpeechRecognition, ev: Event) => any) | null;
-  onerror: ((this: SpeechRecognition, ev: Event) => any) | null;
-  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
+  onstart: ((ev: Event) => void) | null;
+  onend: ((ev: Event) => void) | null;
+  onerror: ((ev: Event) => void) | null;
+  onresult: ((ev: ISpeechRecognitionEvent) => void) | null;
+}
+
+interface ISpeechRecognitionConstructor {
+  new (): ISpeechRecognition;
 }
 
 declare global {
   interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
+    SpeechRecognition?: ISpeechRecognitionConstructor;
+    webkitSpeechRecognition?: ISpeechRecognitionConstructor;
   }
 }
 
@@ -56,12 +60,12 @@ export function LiveInterview() {
   );
   const [isGeneratingQuestion, setIsGeneratingQuestion] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [speechRecognition, setSpeechRecognition] = useState<SpeechRecognition | null>(null);
+  const [speechRecognition, setSpeechRecognition] = useState<ISpeechRecognition | null>(null);
   const [hasApiKey, setHasApiKey] = useState(false);
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const suggestionTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<ISpeechRecognition | null>(null);
 
   const suggestions = [
     "Can you provide a specific example of that?",
@@ -85,59 +89,61 @@ export function LiveInterview() {
     window.addEventListener('storage', checkApiKey);
 
     // Initialize speech recognition
-    if (typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+    if (typeof window !== 'undefined' && (window.webkitSpeechRecognition || window.SpeechRecognition)) {
       const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const recognition = new SpeechRecognitionClass();
-      
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
-      
-      recognition.onstart = () => {
-        console.log('Speech recognition started');
-        setIsListening(true);
-      };
-      
-      recognition.onend = () => {
-        console.log('Speech recognition ended');
-        setIsListening(false);
-        // Restart if still recording and not paused
-        if (isRecording && !isPaused) {
-          setTimeout(() => recognition.start(), 100);
-        }
-      };
-      
-      recognition.onerror = (event: Event) => {
-        console.error('Speech recognition error:', (event as any).error);
-        setIsListening(false);
-      };
-      
-      recognition.onresult = (event: SpeechRecognitionEvent) => {
-        let finalTranscript = '';
-        let interimTranscript = '';
+      if (SpeechRecognitionClass) {
+        const recognition = new SpeechRecognitionClass();
         
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript;
-          } else {
-            interimTranscript += transcript;
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+        
+        recognition.onstart = () => {
+          console.log('Speech recognition started');
+          setIsListening(true);
+        };
+        
+        recognition.onend = () => {
+          console.log('Speech recognition ended');
+          setIsListening(false);
+          // Restart if still recording and not paused
+          if (isRecording && !isPaused) {
+            setTimeout(() => recognition.start(), 100);
           }
-        }
+        };
         
-        if (finalTranscript) {
-          const timestamp = new Date().toLocaleTimeString();
-          setTranscript(prev => [...prev, `[${timestamp}] Speaker: ${finalTranscript.trim()}`]);
+        recognition.onerror = (event: Event) => {
+          console.error('Speech recognition error:', (event as any).error);
+          setIsListening(false);
+        };
+        
+        recognition.onresult = (event: ISpeechRecognitionEvent) => {
+          let finalTranscript = '';
+          let interimTranscript = '';
           
-          // Generate AI question after candidate speaks
-          if (hasApiKey && finalTranscript.trim().length > 10) {
-            generateAIQuestion([...transcript, `Speaker: ${finalTranscript.trim()}`]);
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              finalTranscript += transcript;
+            } else {
+              interimTranscript += transcript;
+            }
           }
-        }
-      };
-      
-      setSpeechRecognition(recognition);
-      recognitionRef.current = recognition;
+          
+          if (finalTranscript) {
+            const timestamp = new Date().toLocaleTimeString();
+            setTranscript(prev => [...prev, `[${timestamp}] Speaker: ${finalTranscript.trim()}`]);
+            
+            // Generate AI question after candidate speaks
+            if (hasApiKey && finalTranscript.trim().length > 10) {
+              generateAIQuestion([...transcript, `Speaker: ${finalTranscript.trim()}`]);
+            }
+          }
+        };
+        
+        setSpeechRecognition(recognition);
+        recognitionRef.current = recognition;
+      }
     }
 
     return () => {
