@@ -110,9 +110,10 @@ async function extractFromPDFUltraSimple(file: File): Promise<string> {
     const pdfjsLib = await import('pdfjs-dist');
     console.log('Ultra-simple method: PDF.js loaded, version:', pdfjsLib.version);
     
-    // Minimal worker setup
+    // Use local worker file
     if (typeof window !== 'undefined') {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
+      pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+      console.log('Ultra-simple method: Worker configured for local file');
     }
     
     const arrayBuffer = await file.arrayBuffer();
@@ -163,9 +164,10 @@ async function extractFromPDFLegacy(file: File): Promise<string> {
     
     const pdfjsLib = await import('pdfjs-dist');
     
-    // Simplified worker configuration
+    // Use local worker file
     if (typeof window !== 'undefined') {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://mozilla.github.io/pdf.js/build/pdf.worker.js';
+      pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+      console.log('Legacy method: Worker configured for local file');
     }
     
     const arrayBuffer = await file.arrayBuffer();
@@ -234,18 +236,11 @@ async function extractFromPDF(file: File): Promise<string> {
     const pdfjsLib = await import('pdfjs-dist');
     console.log('PDF.js loaded, version:', pdfjsLib.version);
     
-    // Configure worker with multiple fallback strategies
+    // Use local worker file
     if (typeof window !== 'undefined') {
       try {
-        // Try multiple CDN sources for the worker
-        const workerUrls = [
-          `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`,
-          `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`,
-          'https://mozilla.github.io/pdf.js/build/pdf.worker.js'
-        ];
-        
-        pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrls[0];
-        console.log('Worker configured:', workerUrls[0]);
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+        console.log('Primary method: Worker configured for local file');
       } catch (workerError) {
         console.warn('Worker configuration failed:', workerError);
       }
