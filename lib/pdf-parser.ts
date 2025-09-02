@@ -42,28 +42,48 @@ Possible solutions:
 }
 
 async function extractFromPDFWithFallback(file: File): Promise<string> {
+  console.log('=== PDF EXTRACTION DEBUG START ===');
+  console.log('File details:', {
+    name: file.name,
+    size: file.size,
+    type: file.type,
+    lastModified: new Date(file.lastModified).toISOString()
+  });
+
   try {
-    // Try primary PDF extraction method
-    console.log('Attempting primary PDF extraction method...');
-    return await extractFromPDF(file);
-  } catch (primaryError) {
-    console.warn('Primary PDF extraction failed:', primaryError);
+    // Try ultra-simple method first
+    console.log('Attempting ultra-simple PDF extraction method...');
+    return await extractFromPDFUltraSimple(file);
+  } catch (ultraSimpleError) {
+    console.warn('Ultra-simple PDF extraction failed:', ultraSimpleError);
     
     try {
-      // Fallback method: try with different PDF.js options
-      console.log('Attempting fallback PDF extraction method...');
-      return await extractFromPDFLegacy(file);
-    } catch (fallbackError) {
-      console.error('Fallback PDF extraction also failed:', fallbackError);
+      // Try primary PDF extraction method
+      console.log('Attempting primary PDF extraction method...');
+      return await extractFromPDF(file);
+    } catch (primaryError) {
+      console.warn('Primary PDF extraction failed:', primaryError);
       
-      // If both methods fail, provide comprehensive error message
-      const primaryMsg = primaryError instanceof Error ? primaryError.message : 'Unknown error';
-      const fallbackMsg = fallbackError instanceof Error ? fallbackError.message : 'Unknown error';
-      
-      throw new Error(`PDF extraction failed with both methods:
-      
-Primary method: ${primaryMsg}
-Fallback method: ${fallbackMsg}
+      try {
+        // Fallback method: try with different PDF.js options
+        console.log('Attempting fallback PDF extraction method...');
+        return await extractFromPDFLegacy(file);
+      } catch (fallbackError) {
+        console.error('All PDF extraction methods failed');
+        console.error('Ultra-simple error:', ultraSimpleError);
+        console.error('Primary error:', primaryError);
+        console.error('Fallback error:', fallbackError);
+        
+        // If all methods fail, provide comprehensive error message
+        const ultraMsg = ultraSimpleError instanceof Error ? ultraSimpleError.message : 'Unknown error';
+        const primaryMsg = primaryError instanceof Error ? primaryError.message : 'Unknown error';
+        const fallbackMsg = fallbackError instanceof Error ? fallbackError.message : 'Unknown error';
+        
+        throw new Error(`PDF extraction failed with all methods:
+
+Ultra-simple: ${ultraMsg}
+Primary: ${primaryMsg}  
+Fallback: ${fallbackMsg}
 
 This PDF may be:
 - Image-based (scanned document)
@@ -76,7 +96,64 @@ Please try:
 2. Converting to DOCX format
 3. Copying the text to a .txt file
 4. Using a PDF with selectable text`);
+      }
     }
+  } finally {
+    console.log('=== PDF EXTRACTION DEBUG END ===');
+  }
+}
+
+async function extractFromPDFUltraSimple(file: File): Promise<string> {
+  try {
+    console.log('Ultra-simple method: Starting for', file.name);
+    
+    const pdfjsLib = await import('pdfjs-dist');
+    console.log('Ultra-simple method: PDF.js loaded, version:', pdfjsLib.version);
+    
+    // Minimal worker setup
+    if (typeof window !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
+    }
+    
+    const arrayBuffer = await file.arrayBuffer();
+    console.log('Ultra-simple method: Array buffer created, size:', arrayBuffer.byteLength);
+    
+    // Ultra-minimal PDF options
+    const loadingTask = pdfjsLib.getDocument({
+      data: arrayBuffer
+    });
+    
+    console.log('Ultra-simple method: Loading PDF...');
+    const pdf = await loadingTask.promise;
+    console.log('Ultra-simple method: PDF loaded, pages:', pdf.numPages);
+    
+    // Extract from first page only
+    const page = await pdf.getPage(1);
+    console.log('Ultra-simple method: Got first page');
+    
+    const textContent = await page.getTextContent();
+    console.log('Ultra-simple method: Got text content, items:', textContent.items?.length);
+    
+    if (!textContent || !textContent.items) {
+      throw new Error('No text content found');
+    }
+    
+    const text = textContent.items
+      .map((item: any) => item.str || '')
+      .join(' ')
+      .trim();
+    
+    console.log('Ultra-simple method: Extracted text length:', text.length);
+    
+    if (text.length === 0) {
+      throw new Error('No text extracted from first page');
+    }
+    
+    return text;
+    
+  } catch (error) {
+    console.error('Ultra-simple method failed:', error);
+    throw error;
   }
 }
 
