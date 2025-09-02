@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { generateFollowUpQuestion } from '@/lib/anthropic';
 
 export function LiveInterview() {
   const [isRecording, setIsRecording] = useState(false);
@@ -9,11 +10,16 @@ export function LiveInterview() {
   const [transcript, setTranscript] = useState<string[]>([]);
   const [suggestionTimer, setSuggestionTimer] = useState(120);
   const [currentSuggestion, setCurrentSuggestion] = useState(
-    "Can you elaborate on the challenges you faced in that project?"
+    "Can you tell me about yourself and your background?"
   );
+  const [isGeneratingQuestion, setIsGeneratingQuestion] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [speechRecognition, setSpeechRecognition] = useState<SpeechRecognition | null>(null);
+  const [hasApiKey, setHasApiKey] = useState(false);
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const suggestionTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   const suggestions = [
     "Can you provide a specific example of that?",
@@ -26,13 +32,76 @@ export function LiveInterview() {
     "What did you learn from that experience?"
   ];
 
-  const mockResponses = [
-    "Thank you for that question. In my previous role, I worked on developing a scalable web application...",
-    "That's a great point. I believe my experience with React and Python makes me a good fit because...",
-    "I approach problem-solving by first understanding the requirements, then breaking down the problem into smaller components...",
-    "One challenge I faced was when we had to migrate our entire system to a new architecture...",
-    "I'm particularly excited about this opportunity because it aligns with my career goals..."
-  ];
+  useEffect(() => {
+    // Check for API key and speech recognition support
+    const checkApiKey = () => {
+      const apiKey = localStorage.getItem('anthropic_api_key');
+      setHasApiKey(!!apiKey);
+    };
+
+    checkApiKey();
+    window.addEventListener('storage', checkApiKey);
+
+    // Initialize speech recognition
+    if (typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+      
+      recognition.onstart = () => {
+        console.log('Speech recognition started');
+        setIsListening(true);
+      };
+      
+      recognition.onend = () => {
+        console.log('Speech recognition ended');
+        setIsListening(false);
+        // Restart if still recording and not paused
+        if (isRecording && !isPaused) {
+          setTimeout(() => recognition.start(), 100);
+        }
+      };
+      
+      recognition.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+      };
+      
+      recognition.onresult = (event: any) => {
+        let finalTranscript = '';
+        let interimTranscript = '';
+        
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript;
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+        
+        if (finalTranscript) {
+          const timestamp = new Date().toLocaleTimeString();
+          setTranscript(prev => [...prev, `[${timestamp}] Speaker: ${finalTranscript.trim()}`]);
+          
+          // Generate AI question after candidate speaks
+          if (hasApiKey && finalTranscript.trim().length > 10) {
+            generateAIQuestion([...transcript, `Speaker: ${finalTranscript.trim()}`]);
+          }
+        }
+      };
+      
+      setSpeechRecognition(recognition);
+      recognitionRef.current = recognition;
+    }
+
+    return () => {
+      window.removeEventListener('storage', checkApiKey);
+    };
+  }, []);
 
   useEffect(() => {
     if (isRecording && !isPaused) {
@@ -50,28 +119,71 @@ export function LiveInterview() {
 
   useEffect(() => {
     if (isRecording) {
-      // Start mock transcription
-      const transcriptTimer = setTimeout(() => {
-        addMockTranscript();
-      }, 10000);
+      // Start speech recognition
+      if (speechRecognition && !isPaused) {
+        try {
+          speechRecognition.start();
+        } catch (error) {
+          console.error('Error starting speech recognition:', error);
+        }
+      }
 
-      // Start suggestion timer
-      suggestionTimerRef.current = setInterval(() => {
-        setSuggestionTimer(prev => {
-          if (prev <= 1) {
-            generateNewSuggestion();
-            return 120;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+      // Start suggestion timer for AI questions
+      if (hasApiKey) {
+        suggestionTimerRef.current = setInterval(() => {
+          setSuggestionTimer(prev => {
+            if (prev <= 1) {
+              generateAIQuestion(transcript);
+              return 120;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      } else {
+        // Fallback to static suggestions if no API key
+        suggestionTimerRef.current = setInterval(() => {
+          setSuggestionTimer(prev => {
+            if (prev <= 1) {
+              generateNewSuggestion();
+              return 120;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      }
 
       return () => {
-        clearTimeout(transcriptTimer);
         if (suggestionTimerRef.current) clearInterval(suggestionTimerRef.current);
       };
+    } else {
+      // Stop speech recognition when not recording
+      if (speechRecognition) {
+        try {
+          speechRecognition.stop();
+        } catch (error) {
+          console.error('Error stopping speech recognition:', error);
+        }
+      }
     }
-  }, [isRecording]);
+  }, [isRecording, isPaused, speechRecognition, hasApiKey]);
+
+  const generateAIQuestion = async (currentTranscript: string[]) => {
+    if (!hasApiKey || isGeneratingQuestion) return;
+    
+    setIsGeneratingQuestion(true);
+    try {
+      const question = await generateFollowUpQuestion(currentTranscript);
+      if (question && question.trim()) {
+        setCurrentSuggestion(question.trim());
+      }
+    } catch (error) {
+      console.error('Error generating AI question:', error);
+      // Fallback to static suggestion
+      generateNewSuggestion();
+    } finally {
+      setIsGeneratingQuestion(false);
+    }
+  };
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -82,32 +194,57 @@ export function LiveInterview() {
   const handleStartRecording = () => {
     setIsRecording(true);
     setIsPaused(false);
+    
+    // Check for microphone permission
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(() => {
+          console.log('Microphone access granted');
+        })
+        .catch((error) => {
+          console.error('Microphone access denied:', error);
+          alert('Microphone access is required for transcription. Please allow microphone access and try again.');
+        });
+    }
   };
 
   const handleStopRecording = () => {
     setIsRecording(false);
     setDuration(0);
     setSuggestionTimer(120);
+    
+    // Stop speech recognition
+    if (speechRecognition) {
+      try {
+        speechRecognition.stop();
+      } catch (error) {
+        console.error('Error stopping speech recognition:', error);
+      }
+    }
+    
     setTimeout(() => {
       alert('Interview recording completed! You can now view the final report.');
     }, 1000);
   };
 
   const handlePauseResume = () => {
-    setIsPaused(!isPaused);
-  };
-
-  const addMockTranscript = () => {
-    const timestamp = new Date().toLocaleTimeString();
-    const response = mockResponses[Math.floor(Math.random() * mockResponses.length)];
+    const newPausedState = !isPaused;
+    setIsPaused(newPausedState);
     
-    setTranscript(prev => [...prev, `[${timestamp}] Candidate: ${response}`]);
-    
-    // Schedule next response
-    if (isRecording) {
-      setTimeout(addMockTranscript, Math.random() * 30000 + 20000);
+    // Handle speech recognition pause/resume
+    if (speechRecognition && isRecording) {
+      try {
+        if (newPausedState) {
+          speechRecognition.stop();
+        } else {
+          speechRecognition.start();
+        }
+      } catch (error) {
+        console.error('Error toggling speech recognition:', error);
+      }
     }
   };
+
 
   const generateNewSuggestion = () => {
     const newSuggestion = suggestions[Math.floor(Math.random() * suggestions.length)];
@@ -127,7 +264,12 @@ export function LiveInterview() {
     <>
       <div className="section-header">
         <h1>Live Interview Recording</h1>
-        <p>Record interviews with real-time AI assistance</p>
+        <p>Record interviews with real-time transcription and AI-powered question suggestions</p>
+        {!hasApiKey && (
+          <div className="api-warning">
+            <span>⚠️ Using basic suggestions. <a href="#settings" onClick={() => window.location.hash = 'settings'}>Set up your Anthropic API key</a> for AI-powered questions.</span>
+          </div>
+        )}
       </div>
 
       <div className="interview-container">
@@ -136,9 +278,14 @@ export function LiveInterview() {
             <div className={`status-indicator ${isRecording ? 'recording' : ''}`}></div>
             <span>
               {isRecording 
-                ? (isPaused ? 'Paused' : 'Recording...') 
+                ? (isPaused ? 'Paused' : isListening ? 'Recording & Listening...' : 'Recording...') 
                 : 'Ready to Record'}
             </span>
+            {isRecording && (
+              <small style={{ marginLeft: '10px', opacity: 0.7 }}>
+                {isListening ? '🎤 Listening' : '🔇 Mic Off'}
+              </small>
+            )}
           </div>
           <div className="interview-timer">
             {formatTime(duration)}
@@ -174,9 +321,20 @@ export function LiveInterview() {
           <div className="card transcription-panel">
             <div className="card__header">
               <h3>Live Transcription</h3>
-              <button className="btn btn--sm btn--outline" onClick={clearTranscription}>
-                Clear
-              </button>
+              <div>
+                {speechRecognition ? (
+                  <small style={{ marginRight: '10px', opacity: 0.7 }}>
+                    {isListening ? '🎤 Active' : '🔇 Inactive'}
+                  </small>
+                ) : (
+                  <small style={{ marginRight: '10px', opacity: 0.7 }}>
+                    ⚠️ Speech recognition not supported
+                  </small>
+                )}
+                <button className="btn btn--sm btn--outline" onClick={clearTranscription}>
+                  Clear
+                </button>
+              </div>
             </div>
             <div className="card__body">
               <div className="transcription-area">
@@ -203,9 +361,13 @@ export function LiveInterview() {
 
           <div className="card ai-suggestions">
             <div className="card__header">
-              <h3>AI Question Suggestions</h3>
+              <h3>{hasApiKey ? 'AI Question Suggestions' : 'Question Suggestions'}</h3>
               <div className="suggestion-counter">
-                Next suggestion in: <span>{suggestionTimer}s</span>
+                {isGeneratingQuestion ? (
+                  <span>🤖 Generating...</span>
+                ) : (
+                  <>Next suggestion in: <span>{suggestionTimer}s</span></>
+                )}
               </div>
             </div>
             <div className="card__body">
