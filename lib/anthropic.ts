@@ -19,7 +19,7 @@ export async function analyzeCV(cvContent: string) {
   try {
     const anthropic = getAnthropicClient();
     const response = await anthropic.messages.create({
-      model: 'claude-3-sonnet-20240229',
+      model: 'claude-3-5-sonnet-20241022',
       max_tokens: 2000,
       messages: [{
         role: 'user',
@@ -52,7 +52,7 @@ export async function analyzeInterview(
   try {
     const anthropic = getAnthropicClient();
     const response = await anthropic.messages.create({
-      model: 'claude-3-sonnet-20240229',
+      model: 'claude-3-5-sonnet-20241022',
       max_tokens: 2000,
       messages: [{
         role: 'user',
@@ -89,7 +89,7 @@ export async function generateFollowUpQuestion(
   try {
     const anthropic = getAnthropicClient();
     const response = await anthropic.messages.create({
-      model: 'claude-3-haiku-20240307',
+      model: 'claude-3-5-haiku-20241022',
       max_tokens: 200,
       messages: [{
         role: 'user',
